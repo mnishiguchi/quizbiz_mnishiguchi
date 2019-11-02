@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Segment, Header, Container } from 'semantic-ui-react';
 import Amplify from 'aws-amplify';
-// import { withAuthenticator } from 'aws-amplify-react';
+import { withAuthenticator } from 'aws-amplify-react';
 
 import aws_exports from './aws-exports';
 
@@ -36,5 +36,4 @@ function App() {
   );
 }
 
-// export default withAuthenticator(App);
-export default App;
+export default withAuthenticator(App);

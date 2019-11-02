@@ -13,15 +13,20 @@
 				"authConfig": {
 					"additionalAuthenticationProviders": [],
 					"defaultAuthentication": {
-						"authenticationType": "API_KEY",
-						"apiKeyConfig": {
-							"description": "",
-							"apiKeyExpirationDays": "10"
+						"authenticationType": "AMAZON_COGNITO_USER_POOLS",
+						"userPoolConfig": {
+							"userPoolId": "authquizbizMnishiguchi1f43370f1f43370a"
 						}
 					}
 				}
 			}
 		}
 	},
-	"auth": {}
+	"auth": {
+		"quizbizMnishiguchi1f43370f1f43370a": {
+			"service": "Cognito",
+			"providerPlugin": "awscloudformation",
+			"dependsOn": []
+		}
+	}
 }

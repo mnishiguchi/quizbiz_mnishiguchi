@@ -9,6 +9,11 @@
             "UnauthRoleName": "amplify-quizbizmnishiguchi-dev-74353-unauthRole",
             "StackName": "amplify-quizbizmnishiguchi-dev-74353",
             "StackId": "arn:aws:cloudformation:us-east-1:831702759394:stack/amplify-quizbizmnishiguchi-dev-74353/0bad0250-fd66-11e9-aef9-12cf4a8c2bc2"
+        },
+        "categories": {
+            "auth": {
+                "quizbizMnishiguchi1f43370f1f43370a": {}
+            }
         }
     }
 }
