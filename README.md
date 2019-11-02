@@ -1,3 +1,5 @@
+https://github.com/ACloudGuru-Resources/Course_Introduction_to_AWS_AppSync
+
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 ## Available Scripts
