@@ -1,5 +1,4 @@
-import React from 'react';
-import _ from 'lodash';
+import React, { useState } from 'react';
 import { Grid, Progress } from 'semantic-ui-react';
 
 import { Cache, graphqlOperation } from 'aws-amplify';
@@ -33,9 +32,8 @@ query MyQuestions ($quizID: ID!){
 }`;
 
 const ViewScore = ({ totalAnswers, correctAnswers }) => {
-  if (totalAnswers === 0) {
-    return '';
-  }
+  if (totalAnswers === 0) return '';
+
   let color = 'grey';
   if (correctAnswers / totalAnswers > 0.85) {
     color = 'green';
@@ -49,72 +47,61 @@ const ViewScore = ({ totalAnswers, correctAnswers }) => {
   return <Progress color={color} value={correctAnswers} total={totalAnswers} progress="ratio" />;
 };
 
-class Quiz extends React.Component {
-  constructor(props) {
-    super(props);
-    //console.log('Read cache of answered question IDs', AnswerCache.getAllKeys());
-    this.state = {
-      questions: [],
-      answeredIds: AnswerCache.getAllKeys() || [],
-      totalAnswers: 0,
-      correctAnswers: 0,
-    };
-  }
+function Quiz({ activeQuiz }) {
+  const [questions, setQuestions] = useState([]);
+  const [answeredIds, setAnsweredIds] = useState([]);
+  // const [answeredIds, setAnsweredIds] = useState(AnswerCache.getAllKeys() || []);
 
-  answer = qId => {
+  const [totalAnswers, setTotalAnswers] = useState(0);
+  const [correctAnswers, setCorrectAnswers] = useState(0);
+
+  const answer = qId => {
     console.log('User answered', qId);
-    AnswerCache.setItem(qId, 1);
-    this.setState({
-      totalAnswers: this.state.totalAnswers + 1,
-      answeredIds: _.concat(this.state.answeredIds, [qId]),
-    });
+    // AnswerCache.setItem(qId, 1);
+
+    setTotalAnswers(prev => prev + 1);
+    setAnsweredIds(prev => [...prev, qId]);
   };
 
-  rightAnswer = () => this.setState({ correctAnswers: this.state.correctAnswers + 1 });
+  const rightAnswer = () => setCorrectAnswers(prev => prev + 1);
 
-  unansweredQuestions = () =>
-    _.filter(this.state.questions, o => {
+  const unansweredQuestions = () =>
+    questions.filter(o => {
       // Filter out all questions that have been answered except the most recent question.
-      return -1 === _.indexOf(this.state.answeredIds, o.id);
+      return -1 === answeredIds.indexOf(o.id);
     });
 
-  scores = () => (
-    <ViewScore totalAnswers={this.state.totalAnswers} correctAnswers={this.state.correctAnswers} />
-  );
+  if (activeQuiz === null) return [];
 
-  render() {
-    if (this.props.activeQuiz === null) return [];
-
-    return (
-      <div>
-        <Connect query={graphqlOperation(ListQuizQuestions, { quizID: this.props.activeQuiz })}>
-          {({ data, loading }) => {
-            if (loading || data === null || data.getQuiz === undefined) return [];
-            return (
-              <Grid celled>
-                {_.slice(
-                  _.filter(data.getQuiz.questions.items, o => {
-                    // Filter out all questions that have been answered except the most recent question.
-                    return -1 === _.indexOf(_.slice(this.state.answeredIds, 0, -1), o.id);
-                  }),
-                  0,
-                  3,
-                ).map(q => (
+  return (
+    <>
+      <Connect query={graphqlOperation(ListQuizQuestions, { quizID: activeQuiz })}>
+        {({ data, loading }) => {
+          if (loading || data === null || data.getQuiz === undefined) return [];
+          return (
+            <Grid celled>
+              {data.getQuiz.questions.items
+                .filter(o => {
+                  // Filter out all questions that have been answered except the most recent question.
+                  return -1 === answeredIds.indexOf(o.id);
+                })
+                .slice(0, 3)
+                .map(q => (
                   <Question
-                    rightAnswer={this.rightAnswer}
-                    answer={this.answer}
-                    key={q.id + 'row'}
+                    rightAnswer={rightAnswer}
+                    answer={answer}
+                    key={`${q.id}row`}
                     question={q}
                   />
                 ))}
-              </Grid>
-            );
-          }}
-        </Connect>
-        {this.scores()}
-      </div>
-    );
-  }
+            </Grid>
+          );
+        }}
+      </Connect>
+
+      <ViewScore totalAnswers={totalAnswers} correctAnswers={correctAnswers} />
+    </>
+  );
 }
 
 export default Quiz;

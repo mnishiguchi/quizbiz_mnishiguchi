@@ -1,7 +1,6 @@
-import React, { Component } from 'react';
+import React, { useState } from 'react';
 import { graphqlOperation } from 'aws-amplify';
 import { Connect } from 'aws-amplify-react';
-import _ from 'lodash';
 import { Menu, Dropdown } from 'semantic-ui-react';
 import QuizInput from './QuizInput';
 
@@ -25,95 +24,77 @@ query MyQuizzes {
     }
 }`;
 
-class QuizPicker extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      modalActive: false,
-    };
-  }
+// A dropdown for selectiong the quiz that a user wants to use.
+function QuizPicker({ activeQuiz, propagateQuiz }) {
+  const [modalActiveState, setModalActiveState] = useState(false);
 
-  handleItemClick = (e, { name }) => {
-    this.props.propagateQuiz(name);
-  };
+  const handleItemClick = (e, { name }) => propagateQuiz(name);
+  const closeModal = () => setModalActiveState(false);
+  const openModal = () => setModalActiveState(true);
 
-  closeModal = () => this.setState({ modalActive: false });
-  openModal = () => this.setState({ modalActive: true });
-  renderDropdowns = data => {
-    if (data.listQuizzes.items.length === 0) {
-      return [];
-    }
+  const renderDropdowns = data => {
+    if (data.listQuizzes.items.length === 0) return [];
+
     return [
-      <Menu.Item
-        key="current"
-        name={'current-' + this.props.activeQuiz}
-        active={!this.state.modalActive}
-      >
-        {this.props.activeQuiz
-          ? _.head(_.filter(data.listQuizzes.items, q => q.id === this.props.activeQuiz)).title
+      <Menu.Item key="current" name={`current-${activeQuiz}`} active={!modalActiveState}>
+        {activeQuiz
+          ? data.listQuizzes.items.filter(q => q.id === activeQuiz)[0].title
           : 'Choose a quiz!'}
       </Menu.Item>,
       <Dropdown key="options" item text="Choose Another">
         <Dropdown.Menu>
-          {_.map(
-            _.filter(
-              _.sortBy(data.listQuizzes.items, 'title'),
-              q => q.id !== this.props.activeQuiz,
-            ),
-            q => {
+          {data.listQuizzes.items
+            .sort((a, b) => a.title - b.title)
+            .filter(q => q.id !== activeQuiz)
+            .map(q => {
               return (
-                <Dropdown.Item key={q.id} name={q.id} active={false} onClick={this.handleItemClick}>
+                <Dropdown.Item key={q.id} name={q.id} active={false} onClick={handleItemClick}>
                   {q.title}
                 </Dropdown.Item>
               );
-            },
-          )}
+            })}
         </Dropdown.Menu>
       </Dropdown>,
     ];
   };
-  render() {
-    return (
-      <Connect
-        query={graphqlOperation(ListQuizzes)}
-        subscription={graphqlOperation(SubscribeToQuizzes)}
-        onSubscriptionMsg={(prev, data) => {
-          console.log('New quiz created:', { prev: prev, newData: data });
-          prev.listQuizzes.items = _.concat(prev.listQuizzes.items, [
-            {
-              id: data.onCreateQuiz.id,
-              title: data.onCreateQuiz.title,
-            },
-          ]);
-          return prev;
-        }}
-      >
-        {({ data, loading }) => {
-          if (loading || data === undefined || data === null || data.listQuizzes === undefined)
-            return [];
-          return (
-            <Menu>
-              {this.renderDropdowns(data)}
-              <Menu.Item
-                name={'new-question'}
-                active={this.state.modalActive}
-                onClick={this.openModal}
-              >
-                {
-                  <QuizInput
-                    modalActive={this.state.modalActive}
-                    onClose={this.closeModal}
-                    activeQuiz={this.props.activeQuiz}
-                    quizzes={data.listQuizzes.items}
-                  />
-                }
-              </Menu.Item>
-            </Menu>
-          );
-        }}
-      </Connect>
-    );
-  }
+
+  return (
+    <Connect
+      query={graphqlOperation(ListQuizzes)}
+      subscription={graphqlOperation(SubscribeToQuizzes)}
+      onSubscriptionMsg={(prev, data) => {
+        console.log('New quiz created:', { prev: prev, newData: data });
+        prev.listQuizzes.items = [
+          ...prev.listQuizzes.items,
+          {
+            id: data.onCreateQuiz.id,
+            title: data.onCreateQuiz.title,
+          },
+        ];
+        return prev;
+      }}
+    >
+      {({ data, loading }) => {
+        if (loading || data === undefined || data === null || data.listQuizzes === undefined)
+          return [];
+        return (
+          <Menu>
+            {renderDropdowns(data)}
+            <Menu.Item name={'new-question'} active={modalActiveState} onClick={openModal}>
+              {
+                <QuizInput
+                  modalActive={modalActiveState}
+                  onClose={closeModal}
+                  activeQuiz={activeQuiz}
+                  quizzes={data.listQuizzes.items}
+                />
+              }
+            </Menu.Item>
+          </Menu>
+        );
+      }}
+    </Connect>
+  );
 }
 
 export default QuizPicker;

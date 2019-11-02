@@ -1,7 +1,6 @@
-import React, { Component } from 'react';
+import React, { useState } from 'react';
 import { graphqlOperation, API } from 'aws-amplify';
 import retry from 'async-retry';
-import _ from 'lodash';
 import { Modal } from 'semantic-ui-react';
 
 import QuestionForm from './QuestionForm';
@@ -69,15 +68,11 @@ const GqlRetry = async (query, variables) => {
   );
 };
 
-class QuizInput extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      correctAnswer: null,
-    };
-  }
+// Renders the form for adding a new question and submits it to AppSync.
+function QuizInput({ modalActive, onClose, activeQuiz, quizzes }) {
+  const [correctAnswer, setCorrectAnswer] = useState(null);
 
-  submitNewQuestion = async input => {
+  const submitNewQuestion = async input => {
     console.log('New question submission', { event: input });
     let quizId = input.quizId;
     if (input.quizTitle !== null) {
@@ -89,29 +84,24 @@ class QuizInput extends Component {
       explanation: input.questionExplanation || '',
       quizId: quizId,
     });
-    _.map(
-      [input.answerText1, input.answerText2, input.answerText3, input.answerText4],
-      (ans, idx) => {
-        if (ans === null) return;
-        GqlRetry(QNewAnswer, {
-          questionId: newQ.data.createQuestion.id,
-          text: ans,
-          correct: input.correctAnswer === 'answerText' + (idx + 1),
-        });
-      },
-    );
+    [input.answerText1, input.answerText2, input.answerText3, input.answerText4].map((ans, idx) => {
+      if (ans === null) return;
+      GqlRetry(QNewAnswer, {
+        questionId: newQ.data.createQuestion.id,
+        text: ans,
+        correct: input.correctAnswer === 'answerText' + (idx + 1),
+      });
+    });
   };
 
-  render() {
-    return (
-      <Modal open={this.props.modalActive} onClose={this.props.onClose} trigger={ActivateInput}>
-        <Modal.Header>Create a Question</Modal.Header>
-        <Modal.Content>
-          <QuestionForm quizzes={this.props.quizzes} submit={this.submitNewQuestion} />
-        </Modal.Content>
-      </Modal>
-    );
-  }
+  return (
+    <Modal open={modalActive} onClose={onClose} trigger={ActivateInput}>
+      <Modal.Header>Create a Question</Modal.Header>
+      <Modal.Content>
+        <QuestionForm quizzes={quizzes} onSubmit={submitNewQuestion} />
+      </Modal.Content>
+    </Modal>
+  );
 }
 
 export default QuizInput;
