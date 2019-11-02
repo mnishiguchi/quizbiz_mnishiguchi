@@ -1,0 +1,5 @@
+{
+    "AppSyncApiName": "quizbiz",
+    "DynamoDBBillingMode": "PAY_PER_REQUEST",
+    "DynamoDBEnableServerSideEncryption": "false"
+}
